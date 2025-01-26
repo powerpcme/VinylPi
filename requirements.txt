@@ -1,0 +1,6 @@
+pyaudio
+shazamio
+pylast
+asyncio
+wave
+argparse
