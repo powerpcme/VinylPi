@@ -76,4 +76,5 @@ python VinylPi.py -t - Use the TUI interface to see what tracks are being played
 
 ### Current bugs 
 
-Right now when the script is ran, A lot of ALSA garbage is displayed but cleared after a bit, Unsure how to fix this but not really program breaking.
+- Right now when the script is ran, A lot of ALSA garbage is displayed but cleared after a bit, Unsure how to fix this but not really program breaking.
+- Since we are using Shazam for the song detection, It seems more obscure songs are not getting picked up, We could potentially add other detection methods in the future but this is the easiest currently. 
