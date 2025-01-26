@@ -18,11 +18,13 @@
 
 This project was created partially using AI, There could be persisting errors, Please join the Discord if you'd like to help.
 
-  
+## Community
+
+Please join the [Discord](https://discord.gg/9Hgvbh8UCn) if you'd like to help with development or just to hang out! 
 
 ### Default configuration
 
-By default, Songs are checked 3 times for 3 seconds each, If 2 of the songs detected are the same, The song will get logged to Last.fm. You can change these variables in the "vinylpi_lib.py" file, Most of the main logic and variables are contained in this file.
+By default, Songs are checked 3 times for 3 seconds each, If 2 of the checks detected are the same, The song will get logged to Last.fm. You can change these variables in the "vinylpi_lib.py" file, Most of the main logic and variables are contained in this file.
 
   
 
