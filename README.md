@@ -34,7 +34,7 @@ If a "lastfm_user_info.json" is not present in the directory, You will need to f
 
 ### Dependencies
 
-Currently this script is designed to run on a Raspberry Pi (Tested on a Pi 3 and Pi 5). It should work on most linux distributions with.
+Currently this script is designed to run on a Raspberry Pi (Tested on a Pi 3 and Pi 5). It should work on most linux distributions with these dependencies installed.
 
 ```
 sudo apt-get update
