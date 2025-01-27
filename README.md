@@ -68,6 +68,41 @@ Run the script once to configure it, It should run you though applying the API c
 -d or --device - Use the number given to the device from the list command here, If this is not specified, It will use the first USB audio device it finds for input. 
 -t or --tui - If you do not plan on using this headless, This will provide a nice terminal UI displaying the currently playing song
 
+### Post install
+
+To run as a service first create a service file
+```
+sudo nano /etc/systemd/system/vinylpi.service
+```
+
+Then paste this as an example, Replace the user and script location with your script location
+
+```
+[Unit]
+Description=VinylPi Last.fm Scrobbler
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/vinylpi/vinylpi.py -v
+WorkingDirectory=/home/vinylpi/
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=vinylpi
+
+[Install]
+WantedBy=multi-user.target
+
+```
+
+Then enable the service to run on boot and start it.
+
+```
+sudo systemctl enable vinylpi.service
+
+sudo systemctl start vinylpi.service
+```
+
 
 ### Command examples
 
