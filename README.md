@@ -4,7 +4,7 @@
 
 <div align="center">
 
-# VinylPi
+<img src="./img/VinylPi-logo.png" alt="drawing" width="200"/>
 
 ## Automatically track your vinyl listening via Last.fm
 
