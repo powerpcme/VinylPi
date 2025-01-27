@@ -16,13 +16,23 @@
 
 ![image info](./img/s20562101262025.png)
 
-## Disclaimer
+### Disclaimer
 
 This project was created partially using AI, There could be persisting errors, Please join the Discord if you'd like to help.
 
-## Community
+### Community
 
 Please join the [Discord](https://discord.gg/9Hgvbh8UCn) if you'd like to help with development or just to hang out! 
+
+### Ideal gear needed
+
+Any raspberry pi, or really any ARM based SBC running a Debian based OS should work here. I've tested it using a Raspberry Pi 5 and 3 both work great.
+
+A USB audio dongle with mic input, I've tested the [SABRENT USB External Stereo Sound Adapter](https://a.co/d/51iTuLf) with success
+
+An RCA to 3.5mm adapter cable [this one](https://a.co/d/3N1qybu) should be fine.
+
+Depending on your setup but a [RCA splitter](https://a.co/d/3O8gUSX) would be helpful so you can take the audio from the pre-amp and send it to your amp/speaker and the other to the pi.
 
 ### Default configuration
 
@@ -117,3 +127,8 @@ python VinylPi.py -t - Use the TUI interface to see what tracks are being played
 
 - Right now when the script is ran, A lot of ALSA garbage is displayed but cleared after a bit, Unsure how to fix this but not really program breaking.
 - Since we are using Shazam for the song detection, It seems more obscure songs are not getting picked up, We could potentially add other detection methods in the future but this is the easiest currently. 
+
+### Future additions
+
+- I would like to have a docker version of this that would make installation a bit more straight forward.
+- Some sort of discord rich presence add on would be cool, Unsure of how to add this with out it being a hassle. 
