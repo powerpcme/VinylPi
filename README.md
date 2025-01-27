@@ -98,6 +98,10 @@ WorkingDirectory=/home/vinylpi/
 StandardOutput=inherit
 StandardError=inherit
 Restart=always
+TimeoutStartSec=300
+TimeoutStopSec=300
+StartLimitBurst=3
+StartLimitIntervalSec=300
 User=vinylpi
 
 [Install]
