@@ -14,6 +14,8 @@
 
 </div>
 
+![image info](./img/s20562101262025.png)
+
 ## Disclaimer
 
 This project was created partially using AI, There could be persisting errors, Please join the Discord if you'd like to help.
