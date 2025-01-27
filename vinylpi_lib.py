@@ -10,6 +10,7 @@ import pylast
 import json
 import collections
 import shutil
+import logging
 
 CHUNK = 4096
 FORMAT = pyaudio.paInt16
