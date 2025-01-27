@@ -79,7 +79,7 @@ Then paste this as an example, Replace the user and script location with your sc
 
 ```
 [Unit]
-Description=VinylPi Last.fm Scrobbler
+Description=VinylPi
 After=network.target
 
 [Service]
