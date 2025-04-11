@@ -19,7 +19,7 @@ from vinylpi_lib import (
     SILENCE_THRESHOLD, ACTIVITY_THRESHOLD, ACTIVITY_WINDOW, STANDBY_WINDOW,
     get_usb_audio_device, get_lastfm_network, clear_console,
     aggressive_song_check, check_song_consistency, recognize_song,
-    log_song_to_lastfm, list_audio_devices, is_audio_active
+    update_lastfm_status, list_audio_devices, is_audio_active
 )
 
 def create_parser():
@@ -151,6 +151,7 @@ async def main() -> None:
 
     current_song = None
     last_logged_song = None
+    song_start_time = None
     consecutive_same_song_count = 0
     
     # Standby mode variables
@@ -298,7 +299,14 @@ async def main() -> None:
 
             # Process the recorded audio for song recognition
             async def recognize_with_data(audio_stream):
-                # We already have the audio data, just return it
+                # Only try to recognize if we have valid audio data
+                if not frames:
+                    return None, None, 0
+                # Force new song detection if we've had audio but no song for a while
+                if no_song_detected_count >= 3 and max_amplitude > ACTIVITY_THRESHOLD:
+                    if args.verbose:
+                        print("Audio detected but no song found, forcing new detection...", file=original_stdout)
+                    return await recognize_func(audio_data)
                 return await recognize_func(audio_data)
             
             # Pass None as the audio stream since we already have the data
@@ -312,12 +320,16 @@ async def main() -> None:
                         display_tui(song)
                     elif not args.verbose:
                         print(f"Now playing: {title} by {artist}", file=original_stdout, flush=True)
-                    last_logged_song = log_song_to_lastfm(
+                    artist, title, new_start_time = update_lastfm_status(
                         lastfm_network, artist, title,
-                        last_logged_song, original_stdout
+                        last_logged_song, original_stdout,
+                        song_start_time
                     )
-                    current_song = song
-                    no_song_detected_count = 0
+                    if artist and title:
+                        current_song = (artist, title)
+                        last_logged_song = current_song
+                        song_start_time = new_start_time
+                        no_song_detected_count = 0
                 else:
                     consecutive_same_song_count += 1
                     if args.verbose and not args.tui:
@@ -325,7 +337,22 @@ async def main() -> None:
             else:
                 consecutive_same_song_count = 0
                 no_song_detected_count += 1
-                if no_song_detected_count >= 3:
+                
+                # Clear now playing status if we've lost the song for a while
+                # But only if audio level is low - keep trying if we have audio
+                if no_song_detected_count >= 3 and max_amplitude < ACTIVITY_THRESHOLD:
+                    # If we had a song playing, scrobble it before clearing
+                    if current_song:
+                        _, _, _ = update_lastfm_status(
+                            lastfm_network, None, None,
+                            last_logged_song, original_stdout,
+                            song_start_time
+                        )
+                        current_song = None
+                        last_logged_song = None
+                        song_start_time = None
+                    
+                    # Try aggressive detection
                     if args.verbose and not args.tui:
                         print("No song detected. Trying aggressive detection...", file=original_stdout, flush=True)
 

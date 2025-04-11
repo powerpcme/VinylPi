@@ -159,8 +159,8 @@ def get_lastfm_network():
         password_hash=user_info["password_hash"]
     )
 
-def log_song_to_lastfm(network, artist, title, last_logged_song, original_stdout):
-    """Log a detected song to Last.fm.
+def update_lastfm_status(network, artist, title, last_logged_song, original_stdout, start_time=None):
+    """Update Last.fm status with the current playing song.
 
     Args:
         network: Last.fm network connection
@@ -168,32 +168,45 @@ def log_song_to_lastfm(network, artist, title, last_logged_song, original_stdout
         title: Title of the song
         last_logged_song: Previously logged song to avoid duplicates
         original_stdout: Original stdout for printing
+        start_time: Optional timestamp when the song started playing
 
     Returns:
-        tuple: Artist and title of the logged song
+        tuple: (artist, title, start_time) of the current song
     """
-    if artist and title and artist != "None" and title != "None":
-        if (artist, title) == last_logged_song:
-            print(f"Duplicate song detected. Not logging: {title} by {artist}", file=original_stdout, flush=True)
-            return last_logged_song
-        
+    if not artist or not title or artist == "None" or title == "None":
+        # Clear now playing if no valid song
         try:
-            network.scrobble(artist=artist, title=title, timestamp=int(time.time()))
-            print(f"Logged to Last.fm: {title} by {artist}", file=original_stdout, flush=True)
-            return (artist, title)
+            network.update_now_playing(artist="", title="")
+        except:
+            pass
+        print("No valid song to update", file=original_stdout, flush=True)
+        return None, None, None
+
+    current_time = int(time.time())
+    
+    # If this is a new song
+    if (artist, title) != last_logged_song:
+        try:
+            # Update now playing status
+            network.update_now_playing(artist=artist, title=title)
+            print(f"Now playing: {title} by {artist}", file=original_stdout, flush=True)
+            
+            # If previous song was playing long enough, scrobble it
+            if last_logged_song and start_time and (current_time - start_time) >= 30:
+                prev_artist, prev_title = last_logged_song
+                network.scrobble(artist=prev_artist, title=prev_title, timestamp=start_time)
+                print(f"Scrobbled previous song: {prev_title} by {prev_artist}", file=original_stdout, flush=True)
+            
+            return artist, title, current_time
+            
         except Exception as e:
-            print(f"Error logging to Last.fm: {e}", file=original_stdout, flush=True)
-    else:
-        print("Song not logged: Invalid artist or title", file=original_stdout, flush=True)
-    return last_logged_song
+            print(f"Error updating Last.fm: {e}", file=original_stdout, flush=True)
+            return last_logged_song[0] if last_logged_song else None, last_logged_song[1] if last_logged_song else None, start_time
+    
+    # Same song still playing
+    return artist, title, start_time if start_time else current_time
 
 async def recognize_song(audio_data, verbose, original_stdout):
-    # Debug: Check audio data
-    import numpy as np
-    audio_array = np.frombuffer(audio_data, dtype=np.float32)
-    max_amplitude = np.max(np.abs(audio_array))
-    if verbose:
-        print(f"Audio max amplitude: {max_amplitude}", file=original_stdout, flush=True)
     """Recognize a song from audio data using Shazam.
 
     Args:
@@ -202,33 +215,52 @@ async def recognize_song(audio_data, verbose, original_stdout):
         original_stdout: Original stdout for printing
 
     Returns:
-        tuple or None: (artist, title) if song is recognized, None otherwise
+        tuple: (artist, title, confidence) if song is recognized, (None, None, 0) otherwise
     """
-    shazam = Shazam()
-    # Convert audio to the format Shazam expects
-    with io.BytesIO() as wav_file:
-        with wave.open(wav_file, 'wb') as wav:
-            wav.setnchannels(CHANNELS)
-            wav.setsampwidth(2)  # Always use 16-bit for Shazam
-            wav.setframerate(RATE)
-            # Convert float32 to int16
-            import numpy as np
-            audio_array = np.frombuffer(audio_data, dtype=np.float32)
-            audio_array = (audio_array * 32767).astype(np.int16)
-            wav.writeframes(audio_array.tobytes())
-        wav_data = wav_file.getvalue()
-    
+    if audio_data is None:
+        if verbose:
+            print("No audio data provided", file=original_stdout, flush=True)
+        return None, None, 0
+
     try:
+        # Debug: Check audio data
+        import numpy as np
+        audio_array = np.frombuffer(audio_data, dtype=np.float32)
+        max_amplitude = np.max(np.abs(audio_array))
+        if verbose:
+            print(f"Audio max amplitude: {max_amplitude}", file=original_stdout, flush=True)
+
+        # Skip recognition if audio is too quiet
+        if max_amplitude < 0.05:  # Lowered threshold
+            if verbose:
+                print("Audio level too low for recognition", file=original_stdout, flush=True)
+            return None, None, 0
+
+        shazam = Shazam()
+        # Convert audio to the format Shazam expects
+        with io.BytesIO() as wav_file:
+            with wave.open(wav_file, 'wb') as wav:
+                wav.setnchannels(CHANNELS)
+                wav.setsampwidth(2)  # Always use 16-bit for Shazam
+                wav.setframerate(RATE)
+                # Convert float32 to int16
+                audio_array = (audio_array * 32767).astype(np.int16)
+                wav.writeframes(audio_array.tobytes())
+            wav_data = wav_file.getvalue()
+        
         result = await shazam.recognize(wav_data)
         if result and 'track' in result:
-            confidence = result.get('confidence', 0)
+            # Always use confidence 1 since Shazam's confidence scores seem unreliable
+            confidence = 1
             if verbose:
-                print(f"Detected: {result['track']['subtitle']} - {result['track']['title']} (Confidence: {confidence})",
+                print(f"Detected: {result['track']['subtitle']} - {result['track']['title']}",
                       file=original_stdout, flush=True)
             return result['track']['subtitle'], result['track']['title'], confidence
     except Exception as e:
         if verbose:
             print(f"Error in song recognition: {e}", file=original_stdout, flush=True)
+    
+    return None, None, 0
     return None, None, 0
 
 def clear_console():
@@ -287,14 +319,12 @@ async def check_song_consistency(recognize_song_func, audio_stream, verbose, ori
 
     song_counts = collections.Counter(song_checks)
     most_common = song_counts.most_common(1)
-    if most_common and most_common[0][1] >= CONSISTENCY_THRESHOLD:
-        matching_indices = [i for i, song in enumerate(song_checks) if song == most_common[0][0]]
-        avg_confidence = sum(confidence_scores[i] for i in matching_indices) / len(matching_indices)
-        
+    if most_common:
+        # Accept any valid detection since we're using fixed confidence now
         if verbose:
             print(
-                f"Consistent song detected: {most_common[0][0][1]} by {most_common[0][0][0]} "
-                f"({most_common[0][1]}/{CONSISTENCY_CHECKS} matches, avg confidence: {avg_confidence:.2f})",
+                f"Song detected: {most_common[0][0][1]} by {most_common[0][0][0]} "
+                f"({most_common[0][1]}/{CONSISTENCY_CHECKS} matches)",
                 file=original_stdout,
                 flush=True
             )
