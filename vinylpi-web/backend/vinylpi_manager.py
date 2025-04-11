@@ -208,7 +208,7 @@ class VinylPiManager:
                     self.logger.debug(f"Audio level: {audio_level}")
                     await self._notify_status_listeners()
                     
-                    if audio_level < 500:  # Silence threshold
+                    if audio_level < 100:  # Silence threshold
                         self.logger.debug("Audio level below threshold, skipping detection")
                         await asyncio.sleep(0.5)  # Check every 500ms
                         continue
@@ -266,116 +266,4 @@ class VinylPiManager:
         await self._notify_status_listeners()
         return True
         
-    def notify_track_update(self):
-        """Notify all track listeners."""
-        for listener in self.track_listeners:
-            asyncio.create_task(listener(self.current_track))
-            
-    def notify_status_update(self):
-        """Notify all status listeners."""
-        status = {
-            "running": self.running,
-            "current_track": self.current_track,
-            "device_index": self.current_device,
-            "debug_info": self.debug_info
-        }
-        for listener in self.status_listeners:
-            asyncio.create_task(listener(status))
 
-    async def start(self, device_index: int):
-        """Start VinylPi with the specified device."""
-        if self.running:
-            return False
-            
-        self.current_device = device_index
-        self.running = True
-        self._task = asyncio.create_task(self._run())
-        self.notify_status_update()
-        return True
-        
-    async def stop(self):
-        """Stop VinylPi."""
-        if not self.running:
-            return False
-            
-        self.running = False
-        if self._task:
-            self._task.cancel()
-            try:
-                await self._task
-            except asyncio.CancelledError:
-                pass
-            self._task = None
-            
-        self.current_track = None
-        self.notify_track_update()
-        self.notify_status_update()
-        return True
-        
-    async def _run(self):
-        """Main VinylPi loop."""
-        p = pyaudio.PyAudio()
-        stream = p.open(
-            format=FORMAT,
-            channels=1,  # Always use mono
-            rate=RATE,
-            input=True,
-            input_device_index=self.current_device,
-            frames_per_buffer=CHUNK
-        )
-        
-        lastfm_network = get_lastfm_network()
-        last_logged_song = None
-        
-        try:
-            while self.running:
-                try:
-                    # Check audio level first
-                    audio_level = get_audio_level(stream, 0.5)
-                    if audio_level < 100:  # Silence threshold
-                        await asyncio.sleep(1)
-                        continue
-                        
-                    # Recognize song
-                    async def recognize_func(audio_data):
-                        return await recognize_song(audio_data, True, self.logger)
-                        
-                    song = await check_song_consistency(recognize_func, stream, True, self.logger)
-                    
-                    if song and song[0] and song[1]:
-                        artist, title = song
-                        # Update current track
-                        self.current_track = {
-                            "artist": artist,
-                            "title": title,
-                            "confidence": 1.0,
-                            "timestamp": datetime.now().isoformat()
-                        }
-                        self.notify_track_update()
-                        
-                        # Log to Last.fm
-                        if lastfm_network:
-                            try:
-                                lastfm_network.update_now_playing(artist=artist, title=title)
-                                if (artist, title) != last_logged_song:
-                                    lastfm_network.scrobble(
-                                        artist=artist,
-                                        title=title,
-                                        timestamp=int(datetime.now().timestamp())
-                                    )
-                                    last_logged_song = (artist, title)
-                            except Exception as e:
-                                self.logger.error(f"Last.fm error: {e}")
-                    
-                    await asyncio.sleep(CHECK_INTERVAL)
-                    
-                except asyncio.CancelledError:
-                    raise
-                except Exception as e:
-                    self.logger.error(f"Error in VinylPi loop: {e}")
-                    await asyncio.sleep(1)
-                    
-        finally:
-            stream.stop_stream()
-            stream.close()
-            p.terminate()
