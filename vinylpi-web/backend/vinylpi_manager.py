@@ -208,7 +208,7 @@ class VinylPiManager:
                     self.logger.debug(f"Audio level: {audio_level}")
                     await self._notify_status_listeners()
                     
-                    if audio_level < 100:  # Silence threshold
+                    if audio_level < 5:  # Silence threshold (5% of max volume)
                         self.logger.debug("Audio level below threshold, skipping detection")
                         await asyncio.sleep(0.5)  # Check every 500ms
                         continue
