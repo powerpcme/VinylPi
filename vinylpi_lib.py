@@ -20,12 +20,12 @@ import pyaudio
 import pylast
 from shazamio import Shazam
 
-CHUNK = 4096
-FORMAT = pyaudio.paFloat32  # Changed to float32 for better quality
+CHUNK = 8192  # Larger chunks for better quality
+FORMAT = pyaudio.paFloat32
 CHANNELS = 1
-RATE = 48000  # Changed to 48kHz for better compatibility
+RATE = 44100  # Standard CD quality
 
-RECORD_SECONDS = 5  # Increased recording time for better recognition
+RECORD_SECONDS = 8  # Longer sample for better recognition
 CHECK_INTERVAL = 3
 AGGRESSIVE_CHECK_INTERVAL = 2
 AGGRESSIVE_CHECK_COUNT = 3
@@ -36,10 +36,10 @@ CONFIDENCE_THRESHOLD = 0  # Ignore confidence since Shazam sometimes returns 0 f
 CHECK_DELAY = 1  # Delay between checks
 
 # Audio level detection settings
-SILENCE_THRESHOLD = 0.05  # Audio levels below this are considered silence
-ACTIVITY_THRESHOLD = 0.1  # Audio levels above this trigger recognition
+SILENCE_THRESHOLD = 0.95  # Audio levels below this are considered silence/noise
+ACTIVITY_THRESHOLD = 0.99  # Audio levels above this indicate active playback
 ACTIVITY_WINDOW = 2  # Number of consecutive chunks above threshold to exit standby
-STANDBY_WINDOW = 5  # Number of consecutive chunks below threshold to enter standby
+STANDBY_WINDOW = 20  # Number of consecutive chunks below threshold to enter standby (about 1 minute)
 
 def is_audio_active(audio_data):
     """Check if there is significant audio activity in the data.
@@ -109,7 +109,7 @@ def get_usb_audio_device():
     """Find the first available USB audio device.
 
     Returns:
-        int or None: Index of the first USB audio device, or None if not found
+        tuple: (device_index, max_channels) or (None, None) if not found
     """
     p = pyaudio.PyAudio()
     try:
@@ -119,31 +119,16 @@ def get_usb_audio_device():
             if devinfo['maxInputChannels'] > 0:
                 name = devinfo['name'].lower()
                 if 'usb' in name:
-                    return i
+                    return i, devinfo['maxInputChannels']
         
         # If no USB device found, return the first device with input channels
         for i in range(p.get_device_count()):
             devinfo = p.get_device_info_by_index(i)
             if devinfo['maxInputChannels'] > 0:
-                return i
+                return i, devinfo['maxInputChannels']
     finally:
         p.terminate()
-    return None
-    """Find the first available USB audio device.
-
-    Returns:
-        int or None: Index of the first USB audio device, or None if not found
-    """
-
-    p = pyaudio.PyAudio()
-    usb_device = None
-    for i in range(p.get_device_count()):
-        device_info = p.get_device_info_by_index(i)
-        if "usb" in device_info["name"].lower() and device_info["maxInputChannels"] > 0:
-            usb_device = i
-            break
-    p.terminate()
-    return usb_device
+    return None, None
 
 def get_lastfm_network():
     """Initialize and return a Last.fm network connection.
@@ -260,7 +245,6 @@ async def recognize_song(audio_data, verbose, original_stdout):
         if verbose:
             print(f"Error in song recognition: {e}", file=original_stdout, flush=True)
     
-    return None, None, 0
     return None, None, 0
 
 def clear_console():

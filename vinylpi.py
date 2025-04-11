@@ -112,15 +112,17 @@ async def main() -> None:
                 if devinfo['maxInputChannels'] > 0 and 'sysdefault' in devinfo['name'].lower():
                     selected_device = i
                     if args.verbose:
-                        print(f"Using sysdefault audio device: {devinfo['name']}", file=original_stdout)
+                        print(f"Using sysdefault audio device: {devinfo['name']} with {devinfo['maxInputChannels']} channels", file=original_stdout)
                     break
             else:
                 # If sysdefault not found, try USB or any input device
-                selected_device = get_usb_audio_device()
+                selected_device, max_channels = get_usb_audio_device()
                 if selected_device is None:
                     print("No suitable audio device found. Available devices:", file=original_stdout)
                     list_audio_devices()
                     sys.exit(1)
+                if args.verbose:
+                    print(f"Using USB audio device with {max_channels} channels", file=original_stdout)
         finally:
             p.terminate()
         
@@ -144,7 +146,8 @@ async def main() -> None:
             rate=RATE,
             input=True,
             input_device_index=selected_device,
-            frames_per_buffer=CHUNK
+            frames_per_buffer=CHUNK,
+            stream_callback=None  # Ensure blocking mode
         )
     
     stream = create_stream()
@@ -166,6 +169,10 @@ async def main() -> None:
             frames = []
             max_amplitude = 0
             stream_error = False
+            
+            # Flush the stream buffer to get fresh audio
+            stream.stop_stream()
+            stream.start_stream()
             
             for _ in range(int(RATE / CHUNK * RECORD_SECONDS)):
                 try:
@@ -302,10 +309,10 @@ async def main() -> None:
                 # Only try to recognize if we have valid audio data
                 if not frames:
                     return None, None, 0
-                # Force new song detection if we've had audio but no song for a while
-                if no_song_detected_count >= 3 and max_amplitude > ACTIVITY_THRESHOLD:
+                # Force new song detection if we have full volume audio but no song
+                if no_song_detected_count >= 3 and max_amplitude >= 0.99:
                     if args.verbose:
-                        print("Audio detected but no song found, forcing new detection...", file=original_stdout)
+                        print("Full volume audio detected but no song found, forcing new detection...", file=original_stdout)
                     return await recognize_func(audio_data)
                 return await recognize_func(audio_data)
             
