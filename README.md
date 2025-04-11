@@ -6,7 +6,7 @@
 
 
 <a href="">[![Discord](https://img.shields.io/discord/1333199316205961328?logo=discord&logoColor=white)
-](https://discord.gg/9Hgvbh8UCn)</a>
+](https://discord.gg/9zpQvnPFPu)</a>
 
 </div>
 
@@ -18,7 +18,7 @@ This project was created partially using AI, There could be persisting errors, P
 
 ### Community
 
-Please join the [Discord](https://discord.gg/9Hgvbh8UCn) if you'd like to help with development or just to hang out! 
+Please join the [Discord](https://discord.gg/9zpQvnPFPu) if you'd like to help with development or just to hang out! 
 
 ### Ideal gear needed
 
