@@ -8,8 +8,6 @@ import json
 import logging
 from datetime import datetime
 from typing import Optional, List, Callable
-from discogs_client import Client
-
 import os
 import sys
 
@@ -26,36 +24,28 @@ import pyaudio
 
 class VinylPiManager:
     def __init__(self):
-        self.current_device: Optional[int] = None
-        self.running: bool = False
-        self.current_track: Optional[dict] = None
-        self.track_listeners: List[Callable] = []
-        
-        # Load config
-        try:
-            with open(os.path.join(project_root, 'config.json')) as f:
-                config = json.load(f)
-            # Set up Discogs client
-            self.discogs = Client('VinylPi/1.0', user_token=config['discogs']['token'])
-        except Exception as e:
-            self.logger.error(f"Error loading Discogs config: {e}")
-            self.discogs = None
-        self.status_listeners: List[Callable] = []
-        self._task: Optional[asyncio.Task] = None
+        # Set up logging first
         self.logger = logging.getLogger('vinylpi')
-        self.debug_info = {
-            'audio_level': 0,
-            'last_detection_time': None,
-            'detection_count': 0,
-            'last_error': None
-        }
-        # Set up logging
         handler = logging.StreamHandler()
         handler.setLevel(logging.DEBUG)
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
         self.logger.setLevel(logging.DEBUG)
+
+        # Initialize state
+        self.current_device: Optional[int] = None
+        self.running: bool = False
+        self.current_track: Optional[dict] = None
+        self.track_listeners: List[Callable] = []
+        self.status_listeners: List[Callable] = []
+        self._task: Optional[asyncio.Task] = None
+        self.debug_info = {
+            'audio_level': 0,
+            'last_detection_time': None,
+            'detection_count': 0,
+            'last_error': None
+        }
         self.stream = None
         self.pyaudio = None
         self.lastfm_network = None
