@@ -1,0 +1,11 @@
+{
+  "lastfm": {
+    "api_key": "your_api_key_here",
+    "api_secret": "your_api_secret_here",
+    "username": "your_lastfm_username",
+    "password": "your_lastfm_password"
+  },
+  "discogs": {
+    "token": "your_discogs_token_here"
+  }
+}

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VinylPi Web</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #2C1810;
+            color: #FFF4D6;
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+        .header .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .header .logo {
+            height: 40px;
+            width: auto;
+        }
+        .header h1 {
+            color: #FFB800;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .settings-toggle {
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            font-size: 24px;
+            padding: 10px;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .settings-toggle:hover { opacity: 1; }
+        .settings-panel {
+            background: #3D2419;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+        .settings-section {
+            margin-bottom: 25px;
+        }
+        .settings-section h3 {
+            color: #FFB800;
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #D4B995;
+            font-size: 14px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            background: #4A2D20;
+            color: #fff;
+            border: 1px solid #5A382A;
+            font-size: 14px;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #FFB800;
+        }
+        .settings-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            display: none;
+        }
+        .alert.success {
+            background: #2D5A27;
+            color: #98E990;
+        }
+        .alert.error {
+            background: #5A2724;
+            color: #E99490;
+        }
+        @keyframes slideDown {
+            from { transform: translateY(-10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .settings-panel.visible { display: block; }
+        .devices { margin-bottom: 20px; }
+        .devices h3 {
+            color: #fff;
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            background: #4A2D20;
+            color: #fff;
+            border: 1px solid #5A382A;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 24px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        button.primary {
+            background: #FFB800;
+            color: #fff;
+        }
+        button.secondary {
+            background: #ff4444;
+            color: #fff;
+        }
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .track-info {
+            padding: 30px;
+            background: #3D2419;
+            border-radius: 12px;
+            margin: 20px 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .track-header {
+            margin-bottom: 20px;
+        }
+        .track-header h3 {
+            color: #FFB800;
+            margin: 0 0 5px 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .track-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .meta-item {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #fff;
+        }
+        .confidence { background: #FFB800; }
+        .duration { background: #8B4513; }
+        .year { background: #A0522D; }
+        .tag { background: #6B4423; }
+        .stats { background: #8B5E3C; }
+        .track-details {
+            margin-top: 15px;
+        }
+        .track-details p {
+            margin: 10px 0;
+            color: #D4B995;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+        .track-details strong {
+            color: #fff;
+            font-weight: 500;
+        }
+        .debug-info {
+            background: #3D2419;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            font-family: 'SF Mono', Consolas, monospace;
+            font-size: 13px;
+            color: #D4B995;
+        }
+        .debug-info h3 {
+            color: #FFB800;
+            margin: 0 0 15px 0;
+            font-size: 16px;
+        }
+        .debug-info .error { color: #ff5252; }
+        .meter {
+            width: 100%;
+            height: 4px;
+            background: #5A382A;
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 15px 0;
+        }
+        .meter-bar {
+            height: 100%;
+            background: #FFB800;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo-container">
+                <img src="img/VinylPi-logo.png" alt="VinylPi Logo" class="logo">
+                <h1>VinylPi</h1>
+            </div>
+            <button class="settings-toggle" onclick="toggleSettings()" title="Settings">⚙️</button>
+        </div>
+
+        <div id="settingsPanel" class="settings-panel">
+            <div class="settings-section devices">
+                <h3>Audio Input Device</h3>
+                <select id="deviceSelect"></select>
+            </div>
+
+            <div class="settings-section lastfm">
+                <h3>Last.fm Configuration</h3>
+                <div id="lastfmAlert" class="alert"></div>
+                <div class="form-group">
+                    <label for="apiKey">API Key</label>
+                    <input type="text" id="apiKey" placeholder="Enter your Last.fm API key">
+                </div>
+                <div class="form-group">
+                    <label for="apiSecret">API Secret</label>
+                    <input type="password" id="apiSecret" placeholder="Enter your Last.fm API secret">
+                </div>
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" placeholder="Enter your Last.fm username">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="Enter your Last.fm password">
+                </div>
+                <div class="settings-actions">
+                    <button class="primary" onclick="saveLastFmConfig()">Save Last.fm Settings</button>
+                    <button onclick="testLastFmConfig()">Test Connection</button>
+                </div>
+            </div>
+
+            <div class="settings-section controls">
+                <h3>VinylPi Control</h3>
+                <div class="controls">
+                    <button class="primary" onclick="startVinylPi()" id="startButton">Start VinylPi</button>
+                    <button class="secondary" onclick="stopVinylPi()" id="stopButton" disabled>Stop VinylPi</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="status">Loading...</div>
+    </div>
+    <script>
+        let ws = null;
+        let selectedDevice = null;
+
+        async function loadLastFmConfig() {
+            try {
+                const response = await fetch('/lastfm-config');
+                const config = await response.json();
+                document.getElementById('apiKey').value = config.api_key || '';
+                document.getElementById('apiSecret').value = config.api_secret || '';
+                document.getElementById('username').value = config.username || '';
+                document.getElementById('password').value = config.password || '';
+            } catch (error) {
+                console.error('Error loading Last.fm config:', error);
+            }
+        }
+
+        async function saveLastFmConfig() {
+            const config = {
+                api_key: document.getElementById('apiKey').value,
+                api_secret: document.getElementById('apiSecret').value,
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value
+            };
+
+            try {
+                const response = await fetch('/lastfm-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                const alert = document.getElementById('lastfmAlert');
+                alert.style.display = 'block';
+
+                if (response.ok) {
+                    alert.textContent = 'Settings saved successfully!';
+                    alert.className = 'alert success';
+                } else {
+                    const error = await response.text();
+                    alert.textContent = 'Error saving settings: ' + error;
+                    alert.className = 'alert error';
+                }
+
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                }, 5000);
+            } catch (error) {
+                console.error('Error saving Last.fm config:', error);
+            }
+        }
+
+        async function testLastFmConfig() {
+            try {
+                const response = await fetch('/test-lastfm');
+                const result = await response.json();
+                
+                const alert = document.getElementById('lastfmAlert');
+                alert.style.display = 'block';
+
+                if (result.success) {
+                    alert.textContent = 'Last.fm connection successful!';
+                    alert.className = 'alert success';
+                } else {
+                    alert.textContent = 'Last.fm connection failed: ' + result.error;
+                    alert.className = 'alert error';
+                }
+
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                }, 5000);
+            } catch (error) {
+                console.error('Error testing Last.fm config:', error);
+            }
+        }
+
+        async function loadDevices() {
+            try {
+                const response = await fetch('/devices');
+                const devices = await response.json();
+                const select = document.getElementById('deviceSelect');
+                select.innerHTML = devices.map(device => 
+                    `<option value="${device.index}">${device.name} (${device.channels} channels)</option>`
+                ).join('');
+                selectedDevice = devices[0]?.index;
+            } catch (error) {
+                console.error('Error loading devices:', error);
+            }
+        }
+
+        async function getStatus() {
+            try {
+                const response = await fetch('/status');
+                const data = await response.json();
+                updateStatus(data);
+            } catch (error) {
+                document.getElementById('status').innerHTML = 'Error loading status';
+            }
+        }
+
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            panel.classList.toggle('visible');
+        }
+
+        function updateStatus(data) {
+            const startButton = document.getElementById('startButton');
+            const stopButton = document.getElementById('stopButton');
+            startButton.disabled = data.running;
+            stopButton.disabled = !data.running;
+
+            document.getElementById('status').innerHTML = `
+                <div class="card">
+                    <h3>Status</h3>
+                    <p>Running: ${data.running ? '✅ Yes' : '❌ No'}</p>
+                    ${data.current_track ? `
+                        <div class="track-info">
+                            <div class="track-header">
+                                <h3>Now Playing</h3>
+                            </div>
+                            
+                            <div class="track-meta">
+                                <span class="meta-item confidence">Match: ${Math.round(data.current_track.confidence * 100)}%</span>
+                                ${data.current_track.duration ? `
+                                    <span class="meta-item duration">${Math.floor(data.current_track.duration / 60)}:${String(data.current_track.duration % 60).padStart(2, '0')}</span>
+                                ` : ''}
+                                ${data.current_track.album?.year ? `
+                                    <span class="meta-item year">${data.current_track.album.year}</span>
+                                ` : ''}
+                                ${data.current_track.tags?.map(tag => `
+                                    <span class="meta-item tag">${tag}</span>
+                                `).join('') || ''}
+                                ${data.current_track.listeners ? `
+                                    <span class="meta-item stats">${parseInt(data.current_track.listeners).toLocaleString()} listeners</span>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="track-details">
+                                <p><strong>Artist:</strong> ${data.current_track.artist}</p>
+                                <p><strong>Title:</strong> ${data.current_track.title}</p>
+                                ${data.current_track.album ? `
+                                    <p><strong>Album:</strong> ${data.current_track.album.name || 'Unknown'}</p>
+                                ` : ''}
+                                ${data.current_track.playcount ? `
+                                    <p><strong>Total Plays:</strong> ${parseInt(data.current_track.playcount).toLocaleString()}</p>
+                                ` : ''}
+                            </div>
+                        </div>
+                    ` : '<p>No track playing</p>'}
+                    ${data.debug_info ? `
+                        <div class="debug-info">
+                            <h3>Debug Info</h3>
+                            <div class="meter">
+                                <div class="meter-bar" style="width: ${Math.min(100, (data.debug_info.audio_level / 2000) * 100)}%"></div>
+                            </div>
+                            <p><strong>Audio Level:</strong> ${data.debug_info.audio_level}</p>
+                            <p><strong>Detection Count:</strong> ${data.debug_info.detection_count}</p>
+                            <p><strong>Last Detection:</strong> ${data.debug_info.last_detection_time ? new Date(data.debug_info.last_detection_time).toLocaleString() : 'Never'}</p>
+                            ${data.debug_info.last_error ? `<p class="error"><strong>Last Error:</strong> ${data.debug_info.last_error}</p>` : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        async function startVinylPi() {
+            const deviceIndex = document.getElementById('deviceSelect').value;
+            try {
+                const response = await fetch('/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device_index: parseInt(deviceIndex) })
+                });
+                await getStatus();
+            } catch (error) {
+                console.error('Error starting VinylPi:', error);
+            }
+        }
+
+        async function stopVinylPi() {
+            try {
+                await fetch('/stop', { method: 'POST' });
+                await getStatus();
+            } catch (error) {
+                console.error('Error stopping VinylPi:', error);
+            }
+        }
+
+        function connectWebSocket() {
+            ws = new WebSocket(`ws://${window.location.host}/ws`);
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.type === 'track_update') {
+                    getStatus();
+                }
+            };
+            ws.onclose = () => {
+                setTimeout(connectWebSocket, 1000);
+            };
+        }
+
+        // Initialize
+        loadDevices();
+        loadLastFmConfig();
+        getStatus();
+        connectWebSocket();
+    </script>
+</body>
+</html>
