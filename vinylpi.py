@@ -37,11 +37,13 @@ Examples:
   python vinylpi.py -v                # Run in verbose mode
   python vinylpi.py -d 2              # Use audio device with index 2
   python vinylpi.py -l                # List available audio devices
+  python vinylpi.py -m                # Display sound meter
   python vinylpi.py -t                # Display a TUI-like output for track info
   python vinylpi.py -v -t             # Combine verbose + TUI""")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
     parser.add_argument("-d", "--device", type=int, default=None, help="Select audio device index")
     parser.add_argument("-l", "--list-devices", action="store_true", help="List available audio devices and exit")
+    parser.add_argument("-m", "--meter", action="store_true", help="Show sound meter for selected device")
     parser.add_argument("-t", "--tui", action="store_true", help="Show track information in a TUI-like interface")
     return parser
 
@@ -87,6 +89,15 @@ def display_tui(current_song=None, is_listening=True, standby=False, status_text
         else:
             print("| Listening for new tracks...".ljust(terminal_width - 1) + "|")
     print("+" + "-" * (terminal_width - 2) + "+")
+
+def display_sound_meter(audio_stream, max_amp=1.0, bar_width=20):
+    while True:
+        data = audio_stream.read(CHUNK, exception_on_overflow=False)
+        amp = is_audio_active(data)
+        amp = max(0.0, min(amp, max_amp))
+        level = int((amp / max_amp) * (bar_width - 1)) + 1
+        print('\r' + '■' * level + '□' * (bar_width - level), f"{amp:>1.2f}", end='')
+    print('')
 
 async def main() -> None:
     """Main program loop that handles audio recording and song recognition.
@@ -135,8 +146,6 @@ async def main() -> None:
             finally:
                 p.terminate()
 
-    lastfm_network = get_lastfm_network()
-
     p = pyaudio.PyAudio()
     
     def create_stream():
@@ -151,6 +160,12 @@ async def main() -> None:
         )
     
     stream = create_stream()
+
+    if args.meter:
+        display_sound_meter(stream)
+        return
+
+    lastfm_network = get_lastfm_network()
 
     current_song = None
     last_logged_song = None
