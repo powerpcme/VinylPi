@@ -24,9 +24,7 @@ Please join the [Discord](https://discord.gg/9zpQvnPFPu) if you'd like to help w
 
 Any raspberry pi, or really any ARM based SBC running a Debian based OS should work here. I've tested it using a Raspberry Pi 5 and 3 both work great.
 
-A USB audio dongle with mic input, I've tested the [SABRENT USB External Stereo Sound Adapter](https://a.co/d/51iTuLf) with success
-
-An RCA to 3.5mm adapter cable [this one](https://a.co/d/3N1qybu) should be fine.
+A USB audio dongle with STEREO input, Regular USB audio cards with MONO mic inputs will not work correctly and cause problems with song detection. Something like the [Behringer U-Control UCA202](https://a.co/d/0e5vmWf) should work great.
 
 Depending on your setup but a [RCA splitter](https://a.co/d/3O8gUSX) would be helpful so you can take the audio from the pre-amp and send it to your amp/speaker and the other to the pi.
 
